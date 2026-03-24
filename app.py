@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from google import genai  # Note the new import style for 2026
+from google.genai import types
 
 # 1. UI Setup
 st.set_page_config(page_title="Razorpay Intelligence", layout="wide")
