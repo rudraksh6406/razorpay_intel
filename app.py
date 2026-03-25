@@ -23,18 +23,74 @@ if "chart_data" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# --- CUSTOM CSS FOR 3D FLIP CARDS ---
+st.markdown("""
+<style>
+.flip-card {
+  background-color: transparent;
+  width: 100%;
+  height: 280px; /* Forces all cards to be the exact same size */
+  perspective: 1000px;
+  margin-bottom: 20px;
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-radius: 12px;
+}
+.flip-card:hover .flip-card-inner {
+  transform: rotateY(180deg);
+}
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+.flip-card-front {
+  background-color: #ffffff;
+  color: #202124;
+  justify-content: center;
+  align-items: center;
+}
+.flip-card-back {
+  background-color: #f8f9fa;
+  color: #202124;
+  transform: rotateY(180deg);
+  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
+  overflow-y: auto;
+}
+.card-title { font-size: 1.2rem; font-weight: bold; margin-top: 10px; margin-bottom: 5px; }
+.card-subtitle { font-size: 0.9rem; color: #5f6368; }
+.back-label { font-size: 0.8rem; font-weight: bold; color: #0C56FF; margin-top: 10px; text-transform: uppercase; }
+.back-text { font-size: 0.9rem; margin-bottom: 5px; line-height: 1.3; }
+</style>
+""", unsafe_allow_html=True)
+
 # 3. DATA ARRAYS
 companies = ["Cashfree", "CCAvenue", "PayU", "BillDesk", "Stripe", "PhonePe", "Easebuzz", "Juspay", "Pine Labs"]
 domains = ["Society & Housing ERP", "Education", "Healthcare", "NBFC & Lending", "Cross-Border SaaS", "E-commerce", "Gaming", "WealthTech", "B2B Marketplaces"]
 
-# 4. SECTION 1: THE HERO SCREEN (Full width, clean logo landing)
+# 4. SECTION 1: THE HERO SCREEN
 st.markdown("<br><br>", unsafe_allow_html=True)
 col_spacer1, col_hero, col_spacer2 = st.columns([1, 2, 1])
 with col_hero:
     st.image(RZP_LOGO, use_container_width=True)
     st.markdown("<h2 style='text-align: center; color: #5F6368; font-weight: 300;'>Strategic Intelligence Engine</h2>", unsafe_allow_html=True)
 st.markdown("<br><br><br><br>", unsafe_allow_html=True)
-
 st.divider()
 
 # 5. SECTION 2: THE CONFIGURATION ROW
@@ -50,7 +106,7 @@ with col_btn:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 6. SINGLE API CALL LOGIC (Redesigned for UI Cards)
+# 6. SINGLE API CALL LOGIC (More Data for the Flashcards)
 if analyze_btn:
     with st.spinner("Compiling Market Intelligence..."):
         try:
@@ -63,7 +119,7 @@ if analyze_btn:
             Identify the Top 3 companies leading the {domain} sector.
             Do NOT use bullet points or numbering. Provide EXACTLY 3 lines of text.
             Format each line strictly like this (separated by the | character):
-            CompanyName | TheirWebsiteDomain.com | CoreProduct | 1 sentence strategy
+            CompanyName | TheirWebsiteDomain.com | CoreProduct | Unique Advantage | Estimated Revenue/Size | 1 sentence strategy
             |||SPLIT|||
             
             **Section 2: Feature Comparison**
@@ -94,7 +150,6 @@ if analyze_btn:
             master_response = client.models.generate_content(model=MODEL_ID, contents=master_prompt)
             st.session_state.report_data = master_response.text.split("|||SPLIT|||")
             
-            # Parse the dynamic graph data
             try:
                 raw_graph_text = st.session_state.report_data[4].strip().split('\n')
                 companies_list, scores_list = [], []
@@ -104,82 +159,83 @@ if analyze_btn:
                         comp = comp.replace('*', '').replace('-', '').strip()
                         companies_list.append(comp)
                         scores_list.append(int(score.strip()))
-                
-                st.session_state.chart_data = pd.DataFrame({
-                    "Penetration Score": scores_list,
-                    "Company": companies_list
-                }).set_index("Company")
+                st.session_state.chart_data = pd.DataFrame({"Penetration Score": scores_list, "Company": companies_list}).set_index("Company")
             except Exception:
-                st.session_state.chart_data = pd.DataFrame({
-                    "Penetration Score": [50, 45, 60],
-                    "Company": ["Razorpay", competitor, "Market Average"]
-                }).set_index("Company")
+                st.session_state.chart_data = pd.DataFrame({"Penetration Score": [50, 45, 60], "Company": ["Razorpay", competitor, "Market Average"]}).set_index("Company")
             
         except Exception as e:
             st.error(f"System Error: {str(e)}")
 
-# 7. DISPLAY LOGIC (The Scrollytelling Flow)
+# 7. DISPLAY LOGIC
 if st.session_state.report_data and len(st.session_state.report_data) >= 5:
     
     # --- ROW 1: THE GRAPH ---
     st.markdown(f"### Market Penetration: {domain}")
     st.bar_chart(st.session_state.chart_data, use_container_width=True, height=350)
-    
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- ROW 2: TOP 3 PLAYERS (Rendered as interactive-looking UI Cards) ---
+    # --- ROW 2: ANIMATED FLIP CARDS ---
     st.markdown("### Top Market Leaders")
+    st.caption("Hover over a card to reveal strategic intelligence.")
     
-    # Parse the custom "|" format from the AI into columns
     raw_leaders = st.session_state.report_data[0].replace("**Section 1: Top Players**", "").strip().split('\n')
     valid_leaders = [line for line in raw_leaders if '|' in line]
     
     if valid_leaders:
-        # Create a column for each leader
         leader_cols = st.columns(len(valid_leaders))
         for i, col in enumerate(leader_cols):
             parts = valid_leaders[i].split('|')
-            if len(parts) >= 4:
+            if len(parts) >= 6:
                 c_name = parts[0].strip()
                 c_domain = parts[1].strip()
                 c_product = parts[2].strip()
-                c_strategy = parts[3].strip()
+                c_usp = parts[3].strip()
+                c_size = parts[4].strip()
+                c_strategy = parts[5].strip()
                 
+                # HTML injection for the 3D Flip Card
+                flip_card_html = f"""
+                <div class="flip-card">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                      <img src='https://logo.clearbit.com/{c_domain}' width='50' style='border-radius:8px; margin-bottom:10px;' onerror="this.style.display='none'">
+                      <div class="card-title">{c_name}</div>
+                      <div class="card-subtitle">{c_product}</div>
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="back-label">Unique Advantage</div>
+                      <div class="back-text">{c_usp}</div>
+                      <div class="back-label">Est. Size / Revenue</div>
+                      <div class="back-text">{c_size}</div>
+                      <div class="back-label">Current Strategy</div>
+                      <div class="back-text">{c_strategy}</div>
+                    </div>
+                  </div>
+                </div>
+                """
                 with col:
-                    # 'border=True' creates a beautiful container card in modern Streamlit
-                    with st.container(border=True):
-                        st.markdown(f"<img src='https://logo.clearbit.com/{c_domain}' width='24' style='vertical-align:middle; margin-right:8px; border-radius:4px;'> **{c_name}**", unsafe_allow_html=True)
-                        st.caption(f"**Product:** {c_product}")
-                        st.write(c_strategy)
+                    st.markdown(flip_card_html, unsafe_allow_html=True)
     else:
         st.info("Market leaders data is currently formatting. Please run the report again.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- ROW 3: STRATEGY DEEP DIVES (Accordions) ---
+    # --- ROW 3: STRATEGY ACCORDIONS ---
     st.markdown("### Strategic Deep Dive")
-    
     with st.expander("Product & Gap Analysis", expanded=False):
-        clean_text = st.session_state.report_data[1].replace("**Section 2: Feature Comparison**", "").strip()
-        st.markdown(clean_text)
-
+        st.markdown(st.session_state.report_data[1].replace("**Section 2: Feature Comparison**", "").strip())
     with st.expander("Ecosystem & Alliances Playbook", expanded=False):
-        clean_text = st.session_state.report_data[2].replace("**Section 3: Partnerships**", "").strip()
-        st.markdown(clean_text)
-        
+        st.markdown(st.session_state.report_data[2].replace("**Section 3: Partnerships**", "").strip())
     with st.expander("Financial Intelligence", expanded=False):
-        clean_text = st.session_state.report_data[3].replace("**Section 4: Revenue Analysis**", "").strip()
-        st.markdown(clean_text)
+        st.markdown(st.session_state.report_data[3].replace("**Section 4: Revenue Analysis**", "").strip())
+    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
-    st.markdown("<br><br><br><br>", unsafe_allow_html=True) # Adds padding above the chatbot
-
-# 8. THE CHATBOT WIDGET (Pinned to the bottom automatically by Streamlit)
+# 8. THE CHATBOT WIDGET
 for msg in st.session_state.messages:
     avatar_icon = RZP_LOGO if msg["role"] == "assistant" else "user"
     with st.chat_message(msg["role"], avatar=avatar_icon):
         st.markdown(msg["content"])
 
-# st.chat_input naturally floats at the bottom of the viewport
 if prompt := st.chat_input("Query the Intelligence Engine..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="user"):
