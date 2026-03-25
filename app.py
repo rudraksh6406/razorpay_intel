@@ -23,7 +23,7 @@ if "chart_data" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CUSTOM CSS FOR 3D FLIP CARDS & FLOATING CHAT WIDGET ---
+# --- CUSTOM CSS FOR SOFTER 3D FLIP CARDS & SMALL CHAT WIDGET ---
 st.markdown("""
 <style>
 /* Flip Card Container Settings */
@@ -42,7 +42,7 @@ st.markdown("""
   transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border-radius: 4px; /* Sharper enterprise edges */
+  border-radius: 16px; /* Softer edges */
 }
 .flip-card:hover .flip-card-inner {
   transform: rotateY(180deg);
@@ -53,14 +53,14 @@ st.markdown("""
   height: 100%;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  border-radius: 4px;
+  border-radius: 16px; /* Softer edges match the inner container */
   padding: 24px;
   border: 1px solid #E8EAED;
   display: flex;
   flex-direction: column;
 }
 
-/* Front Card Typography - ALL CAPS */
+/* Front Card Typography */
 .flip-card-front {
   background-color: #FFFFFF;
   color: #202124;
@@ -71,7 +71,7 @@ st.markdown("""
 .card-title { font-size: 1.6rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 8px; color: #0C56FF; }
 .card-subtitle { font-size: 0.85rem; color: #5F6368; font-weight: 600; letter-spacing: 1px; }
 
-/* Back Card Typography - ALL CAPS */
+/* Back Card Typography */
 .flip-card-back {
   background-color: #F8F9FA;
   color: #202124;
@@ -85,33 +85,34 @@ st.markdown("""
 .back-label { font-size: 0.75rem; font-weight: 800; color: #0C56FF; margin-top: 12px; letter-spacing: 1.5px; }
 .back-text { font-size: 0.85rem; margin-bottom: 4px; line-height: 1.4; font-weight: 500; color: #3C4043; }
 
-/* Floating Bottom-Left Chat Widget CSS */
+/* Small Floating Bottom-Right Chat Widget CSS */
 [data-testid="stPopover"] {
     position: fixed;
-    bottom: 30px;
-    left: 30px;
+    bottom: 20px;
+    right: 20px; /* Moved to the bottom right side */
     z-index: 99999;
 }
 [data-testid="stPopover"] > button {
     background-color: #202124 !important;
     color: #FFFFFF !important;
-    border-radius: 50px !important;
-    padding: 12px 24px !important;
+    border-radius: 30px !important; /* Pill shape */
+    padding: 8px 16px !important; /* Much smaller padding */
+    font-size: 0.8rem !important; /* Smaller text */
     border: none !important;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    transition: background-color 0.3s;
+    letter-spacing: 0.5px !important;
+    transition: background-color 0.3s, transform 0.2s;
 }
 [data-testid="stPopover"] > button:hover {
     background-color: #0C56FF !important;
+    transform: scale(1.05); /* Slight pop effect on hover */
 }
 /* Style the chat window that opens */
 [data-testid="stPopoverBody"] {
-    width: 380px !important;
-    max-height: 500px !important;
-    border-radius: 8px !important;
+    width: 340px !important;
+    max-height: 450px !important;
+    border-radius: 12px !important;
     border: 1px solid #E8EAED !important;
     box-shadow: 0 10px 24px rgba(0,0,0,0.15) !important;
 }
@@ -144,7 +145,7 @@ with col_btn:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 6. SINGLE API CALL LOGIC (Logos removed from prompt)
+# 6. SINGLE API CALL LOGIC
 if analyze_btn:
     with st.spinner("Compiling Market Intelligence..."):
         try:
@@ -212,7 +213,7 @@ if st.session_state.report_data and len(st.session_state.report_data) >= 5:
     st.bar_chart(st.session_state.chart_data, use_container_width=True, height=350)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- ROW 2: ANIMATED FLIP CARDS (ALL CAPS, NO LOGOS) ---
+    # --- ROW 2: ANIMATED FLIP CARDS ---
     st.markdown("### TOP MARKET LEADERS")
     st.caption("HOVER TO REVEAL STRATEGIC INTELLIGENCE.")
     
@@ -265,8 +266,8 @@ if st.session_state.report_data and len(st.session_state.report_data) >= 5:
         st.markdown(st.session_state.report_data[3].replace("**Section 4: Revenue Analysis**", "").strip())
     st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
-# 8. THE FLOATING CHAT WIDGET
-with st.popover("INTELLIGENCE ASSISTANT"):
+# 8. THE SMALL FLOATING CHAT WIDGET (Bottom Right)
+with st.popover("AI ASSISTANT"):
     st.markdown("### QUERY ENGINE")
     
     # Display History
@@ -288,6 +289,6 @@ with st.popover("INTELLIGENCE ASSISTANT"):
                 """
                 chat_res = client.models.generate_content(model=MODEL_ID, contents=engineered_prompt)
                 st.session_state.messages.append({"role": "assistant", "content": chat_res.text})
-                st.rerun() # Refresh to show new message
+                st.rerun() 
             except Exception as e:
                 st.error("System Error processing query.")
