@@ -23,13 +23,14 @@ if "chart_data" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CUSTOM CSS FOR 3D FLIP CARDS ---
+# --- CUSTOM CSS FOR 3D FLIP CARDS & FLOATING CHAT WIDGET ---
 st.markdown("""
 <style>
+/* Flip Card Container Settings */
 .flip-card {
   background-color: transparent;
   width: 100%;
-  height: 280px; /* Forces all cards to be the exact same size */
+  height: 280px; 
   perspective: 1000px;
   margin-bottom: 20px;
 }
@@ -38,10 +39,10 @@ st.markdown("""
   width: 100%;
   height: 100%;
   text-align: center;
-  transition: transform 0.6s;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-radius: 4px; /* Sharper enterprise edges */
 }
 .flip-card:hover .flip-card-inner {
   transform: rotateY(180deg);
@@ -52,31 +53,68 @@ st.markdown("""
   height: 100%;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 24px;
+  border: 1px solid #E8EAED;
   display: flex;
   flex-direction: column;
 }
+
+/* Front Card Typography - ALL CAPS */
 .flip-card-front {
-  background-color: #ffffff;
+  background-color: #FFFFFF;
   color: #202124;
   justify-content: center;
   align-items: center;
+  text-transform: uppercase;
 }
+.card-title { font-size: 1.6rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 8px; color: #0C56FF; }
+.card-subtitle { font-size: 0.85rem; color: #5F6368; font-weight: 600; letter-spacing: 1px; }
+
+/* Back Card Typography - ALL CAPS */
 .flip-card-back {
-  background-color: #f8f9fa;
+  background-color: #F8F9FA;
   color: #202124;
   transform: rotateY(180deg);
   justify-content: flex-start;
   align-items: flex-start;
   text-align: left;
   overflow-y: auto;
+  text-transform: uppercase;
 }
-.card-title { font-size: 1.2rem; font-weight: bold; margin-top: 10px; margin-bottom: 5px; }
-.card-subtitle { font-size: 0.9rem; color: #5f6368; }
-.back-label { font-size: 0.8rem; font-weight: bold; color: #0C56FF; margin-top: 10px; text-transform: uppercase; }
-.back-text { font-size: 0.9rem; margin-bottom: 5px; line-height: 1.3; }
+.back-label { font-size: 0.75rem; font-weight: 800; color: #0C56FF; margin-top: 12px; letter-spacing: 1.5px; }
+.back-text { font-size: 0.85rem; margin-bottom: 4px; line-height: 1.4; font-weight: 500; color: #3C4043; }
+
+/* Floating Bottom-Left Chat Widget CSS */
+[data-testid="stPopover"] {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 99999;
+}
+[data-testid="stPopover"] > button {
+    background-color: #202124 !important;
+    color: #FFFFFF !important;
+    border-radius: 50px !important;
+    padding: 12px 24px !important;
+    border: none !important;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    transition: background-color 0.3s;
+}
+[data-testid="stPopover"] > button:hover {
+    background-color: #0C56FF !important;
+}
+/* Style the chat window that opens */
+[data-testid="stPopoverBody"] {
+    width: 380px !important;
+    max-height: 500px !important;
+    border-radius: 8px !important;
+    border: 1px solid #E8EAED !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.15) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -89,12 +127,12 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 col_spacer1, col_hero, col_spacer2 = st.columns([1, 2, 1])
 with col_hero:
     st.image(RZP_LOGO, use_container_width=True)
-    st.markdown("<h2 style='text-align: center; color: #5F6368; font-weight: 300;'>Strategic Intelligence Engine</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #5F6368; font-weight: 300; letter-spacing: 1px; text-transform: uppercase; font-size: 1.2rem;'>Strategic Intelligence Engine</h2>", unsafe_allow_html=True)
 st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 st.divider()
 
 # 5. SECTION 2: THE CONFIGURATION ROW
-st.markdown("### Analysis Configuration")
+st.markdown("### ANALYSIS CONFIGURATION")
 col_input1, col_input2, col_btn = st.columns([2, 2, 1])
 
 with col_input1:
@@ -102,11 +140,11 @@ with col_input1:
 with col_input2:
     domain = st.selectbox("Select Target Segment", domains, label_visibility="collapsed")
 with col_btn:
-    analyze_btn = st.button("Generate Report", use_container_width=True, type="primary")
+    analyze_btn = st.button("GENERATE REPORT", use_container_width=True, type="primary")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 6. SINGLE API CALL LOGIC (More Data for the Flashcards)
+# 6. SINGLE API CALL LOGIC (Logos removed from prompt)
 if analyze_btn:
     with st.spinner("Compiling Market Intelligence..."):
         try:
@@ -119,7 +157,7 @@ if analyze_btn:
             Identify the Top 3 companies leading the {domain} sector.
             Do NOT use bullet points or numbering. Provide EXACTLY 3 lines of text.
             Format each line strictly like this (separated by the | character):
-            CompanyName | TheirWebsiteDomain.com | CoreProduct | Unique Advantage | Estimated Revenue/Size | 1 sentence strategy
+            CompanyName | CoreProduct | Unique Advantage | Estimated Revenue/Size | 1 sentence strategy
             |||SPLIT|||
             
             **Section 2: Feature Comparison**
@@ -170,13 +208,13 @@ if analyze_btn:
 if st.session_state.report_data and len(st.session_state.report_data) >= 5:
     
     # --- ROW 1: THE GRAPH ---
-    st.markdown(f"### Market Penetration: {domain}")
+    st.markdown(f"### MARKET PENETRATION: {domain.upper()}")
     st.bar_chart(st.session_state.chart_data, use_container_width=True, height=350)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- ROW 2: ANIMATED FLIP CARDS ---
-    st.markdown("### Top Market Leaders")
-    st.caption("Hover over a card to reveal strategic intelligence.")
+    # --- ROW 2: ANIMATED FLIP CARDS (ALL CAPS, NO LOGOS) ---
+    st.markdown("### TOP MARKET LEADERS")
+    st.caption("HOVER TO REVEAL STRATEGIC INTELLIGENCE.")
     
     raw_leaders = st.session_state.report_data[0].replace("**Section 1: Top Players**", "").strip().split('\n')
     valid_leaders = [line for line in raw_leaders if '|' in line]
@@ -185,29 +223,26 @@ if st.session_state.report_data and len(st.session_state.report_data) >= 5:
         leader_cols = st.columns(len(valid_leaders))
         for i, col in enumerate(leader_cols):
             parts = valid_leaders[i].split('|')
-            if len(parts) >= 6:
+            if len(parts) >= 5:
                 c_name = parts[0].strip()
-                c_domain = parts[1].strip()
-                c_product = parts[2].strip()
-                c_usp = parts[3].strip()
-                c_size = parts[4].strip()
-                c_strategy = parts[5].strip()
+                c_product = parts[1].strip()
+                c_usp = parts[2].strip()
+                c_size = parts[3].strip()
+                c_strategy = parts[4].strip()
                 
-                # HTML injection for the 3D Flip Card
                 flip_card_html = f"""
                 <div class="flip-card">
                   <div class="flip-card-inner">
                     <div class="flip-card-front">
-                      <img src='https://logo.clearbit.com/{c_domain}' width='50' style='border-radius:8px; margin-bottom:10px;' onerror="this.style.display='none'">
                       <div class="card-title">{c_name}</div>
                       <div class="card-subtitle">{c_product}</div>
                     </div>
                     <div class="flip-card-back">
-                      <div class="back-label">Unique Advantage</div>
+                      <div class="back-label">UNIQUE ADVANTAGE</div>
                       <div class="back-text">{c_usp}</div>
-                      <div class="back-label">Est. Size / Revenue</div>
+                      <div class="back-label">EST. SIZE / REVENUE</div>
                       <div class="back-text">{c_size}</div>
-                      <div class="back-label">Current Strategy</div>
+                      <div class="back-label">CURRENT STRATEGY</div>
                       <div class="back-text">{c_strategy}</div>
                     </div>
                   </div>
@@ -216,44 +251,43 @@ if st.session_state.report_data and len(st.session_state.report_data) >= 5:
                 with col:
                     st.markdown(flip_card_html, unsafe_allow_html=True)
     else:
-        st.info("Market leaders data is currently formatting. Please run the report again.")
+        st.info("Data formatting. Please run the report again.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --- ROW 3: STRATEGY ACCORDIONS ---
-    st.markdown("### Strategic Deep Dive")
-    with st.expander("Product & Gap Analysis", expanded=False):
+    st.markdown("### STRATEGIC DEEP DIVE")
+    with st.expander("PRODUCT & GAP ANALYSIS", expanded=False):
         st.markdown(st.session_state.report_data[1].replace("**Section 2: Feature Comparison**", "").strip())
-    with st.expander("Ecosystem & Alliances Playbook", expanded=False):
+    with st.expander("ECOSYSTEM & ALLIANCES PLAYBOOK", expanded=False):
         st.markdown(st.session_state.report_data[2].replace("**Section 3: Partnerships**", "").strip())
-    with st.expander("Financial Intelligence", expanded=False):
+    with st.expander("FINANCIAL INTELLIGENCE", expanded=False):
         st.markdown(st.session_state.report_data[3].replace("**Section 4: Revenue Analysis**", "").strip())
     st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
-# 8. THE CHATBOT WIDGET
-for msg in st.session_state.messages:
-    avatar_icon = RZP_LOGO if msg["role"] == "assistant" else "user"
-    with st.chat_message(msg["role"], avatar=avatar_icon):
-        st.markdown(msg["content"])
+# 8. THE FLOATING CHAT WIDGET
+with st.popover("INTELLIGENCE ASSISTANT"):
+    st.markdown("### QUERY ENGINE")
+    
+    # Display History
+    for msg in st.session_state.messages:
+        speaker = "AI" if msg["role"] == "assistant" else "YOU"
+        st.markdown(f"**{speaker}:** {msg['content']}")
 
-if prompt := st.chat_input("Query the Intelligence Engine..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="user"):
-        st.markdown(prompt)
-
-    with st.chat_message("assistant", avatar=RZP_LOGO):
-        with st.spinner("Analyzing..."):
+    # Input Form
+    with st.form("chat_form", clear_on_submit=True):
+        user_input = st.text_input("Ask a strategy question...", label_visibility="collapsed")
+        submit_btn = st.form_submit_button("SEND QUERY")
+        
+        if submit_btn and user_input:
+            st.session_state.messages.append({"role": "user", "content": user_input})
             try:
                 engineered_prompt = f"""
-                You are a Razorpay Strategic Intelligence Assistant speaking to a company executive.
-                The user asked: "{prompt}"
-                Strict Rules for your response:
-                1. Be professional and highly practical.
-                2. Provide zero theoretical background.
-                3. Keep it exceptionally brief (maximum 3 sentences).
+                You are a Razorpay Strategic Intelligence Assistant. The user asked: "{user_input}"
+                Provide zero theory. Keep it to a maximum of 3 sentences. Be blunt and professional.
                 """
                 chat_res = client.models.generate_content(model=MODEL_ID, contents=engineered_prompt)
-                st.markdown(chat_res.text)
                 st.session_state.messages.append({"role": "assistant", "content": chat_res.text})
+                st.rerun() # Refresh to show new message
             except Exception as e:
-                st.error(f"Chat Error: {str(e)}")
+                st.error("System Error processing query.")
