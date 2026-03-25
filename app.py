@@ -116,21 +116,39 @@ else:
 with tab4:
     st.subheader("Query the Intelligence Engine")
     
+    # Display Chat History from Memory
     for msg in st.session_state.messages:
         avatar_icon = RZP_LOGO if msg["role"] == "assistant" else "user"
         with st.chat_message(msg["role"], avatar=avatar_icon):
             st.markdown(msg["content"])
 
-    if prompt := st.chat_input("Ask a follow-up question..."):
+    # Chat Input Box
+    if prompt := st.chat_input("Ask a specific market or strategy question..."):
+        # 1. Display User Message
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="user"):
             st.markdown(prompt)
 
+        # 2. Generate AI Response
         with st.chat_message("assistant", avatar=RZP_LOGO):
             with st.spinner("Analyzing..."):
                 try:
-                    chat_res = client.models.generate_content(model=MODEL_ID, contents=prompt)
+                    # THE FIX: We wrap the user's prompt in strict behavioral rules
+                    engineered_prompt = f"""
+                    You are a Razorpay Strategic Intelligence Assistant speaking to a company executive.
+                    
+                    The user asked: "{prompt}"
+                    
+                    Strict Rules for your response:
+                    1. Be subtle, professional, and highly practical.
+                    2. Provide zero theoretical background, fluff, or generic advice.
+                    3. Get straight to the data, strategy, or market reality.
+                    4. Keep it exceptionally brief (maximum 3-4 short sentences or 3 quick bullet points).
+                    """
+                    
+                    chat_res = client.models.generate_content(model=MODEL_ID, contents=engineered_prompt)
                     st.markdown(chat_res.text)
                     st.session_state.messages.append({"role": "assistant", "content": chat_res.text})
+                    
                 except Exception as e:
                     st.error(f"Chat Error: {str(e)}")
