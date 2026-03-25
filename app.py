@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 import pandas as pd
 from google import genai
 
@@ -10,7 +9,7 @@ st.set_page_config(page_title="Razorpay Market Intelligence", layout="wide", ini
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    st.error("🚨 System Error: GEMINI_API_KEY is missing from Streamlit Secrets.")
+    st.error("System Error: GEMINI_API_KEY is missing from Streamlit Secrets.")
     st.stop()
 
 # Initialize the client with the safest Free-Tier model
@@ -46,14 +45,14 @@ st.title("Market Intelligence Dashboard")
 st.markdown(f"**Focus:** Razorpay vs. {competitor} | **Sector:** {domain}")
 st.write("")
 
-# 6. SINGLE API CALL LOGIC
+# 6. SINGLE API CALL LOGIC WITH DYNAMIC GRAPH DATA
 if analyze_btn:
-    with st.spinner("Analyzing Market Data (Running 1 Secure Request)..."):
+    with st.spinner("Analyzing Market Data & Generating Live Charts (Making 1 Secure Request)..."):
         try:
             master_prompt = f"""
             Analyze Razorpay vs {competitor} in the {domain} sector.
-            Provide the output strictly in bullet points. Do not use paragraphs. 
-            Separate the 3 sections using exactly this text: |||SPLIT|||
+            Provide the output strictly in the requested format. Do not use paragraphs. 
+            Separate the 4 sections using exactly this text: |||SPLIT|||
 
             **Section 1: Top Players**
             List the top 3 players in this sector. Format: [Company Name](URL) - Core Product - 1 sentence strategy.
@@ -69,50 +68,82 @@ if analyze_btn:
             * Strategy: Build or Partner?
             * Target 1: [Company Name](URL) - Why partner?
             * Target 2: [Company Name](URL) - Why partner?
+            |||SPLIT|||
+
+            **Section 4: Graph Data**
+            Estimate a 'Market Penetration Score' (0-100) for Razorpay, {competitor}, and the Top 3 leaders you identified. 
+            Output ONLY 5 lines in this exact format (Company,Score). Do not add any asterisks, dashes, or extra text. Example:
+            Razorpay,80
+            {competitor},75
+            Leader 1,90
             """
             
             # The ONLY API Call
             master_response = client.models.generate_content(model=MODEL_ID, contents=master_prompt)
             
-            # Save the response into Memory
+            # Split the response into 4 parts and save to Memory
             st.session_state.report_data = master_response.text.split("|||SPLIT|||")
             
-            # Save chart data into Memory
-            st.session_state.chart_data = pd.DataFrame({
-                "Focus Score": [85, 75, 60, 45],
-                "Entities": ["Razorpay", competitor, "Top Leader", "New Entrant"]
-            }).set_index("Entities")
+            # --- PARSE THE DYNAMIC GRAPH DATA ---
+            try:
+                # Target the 4th section (index 3) which contains the CSV-like data
+                raw_graph_text = st.session_state.report_data[3].strip().split('\n')
+                companies_list = []
+                scores_list = []
+                
+                for line in raw_graph_text:
+                    if ',' in line:
+                        comp, score = line.split(',', 1)
+                        comp = comp.replace('*', '').replace('-', '').strip()
+                        companies_list.append(comp)
+                        scores_list.append(int(score.strip()))
+                
+                st.session_state.chart_data = pd.DataFrame({
+                    "Penetration Score": scores_list,
+                    "Company": companies_list
+                }).set_index("Company")
+            except Exception:
+                # Fallback if the AI fails to format the numbers correctly
+                st.session_state.chart_data = pd.DataFrame({
+                    "Penetration Score": [50, 45, 60],
+                    "Company": ["Razorpay", competitor, "Market Average"]
+                }).set_index("Company")
             
         except Exception as e:
-            # We are printing the raw error to see exactly what Google is complaining about
-            st.error(f"🚨 GOOGLE API ERROR: {str(e)}")
+            st.error(f"GOOGLE API ERROR: {str(e)}")
 
 # 7. DISPLAY TABS (Renders from Memory!)
 tab1, tab2, tab3, tab4 = st.tabs(["Market Leaders", "Feature Comparison", "Partnerships", "Intelligence Assistant"])
 
-if st.session_state.report_data and len(st.session_state.report_data) >= 3:
+# Check if we have all 4 sections
+if st.session_state.report_data and len(st.session_state.report_data) >= 4:
+    
     with tab1:
         col1, col2 = st.columns([1, 2])
         with col1:
-            st.subheader("Market Focus Score")
+            st.subheader("Market Penetration Score")
             st.bar_chart(st.session_state.chart_data)
         with col2:
             st.subheader(f"Top Players in {domain}")
-            st.markdown(st.session_state.report_data[0].strip())
+            # Strip out the prompt headers to keep UI clean
+            clean_text = st.session_state.report_data[0].replace("**Section 1: Top Players**", "").strip()
+            st.markdown(clean_text)
 
     with tab2:
         st.subheader("Product & Gap Analysis")
-        st.markdown(st.session_state.report_data[1].strip())
+        clean_text = st.session_state.report_data[1].replace("**Section 2: Feature Comparison**", "").strip()
+        st.markdown(clean_text)
 
     with tab3:
         st.subheader("Ecosystem & Alliances")
-        st.markdown(st.session_state.report_data[2].strip())
+        clean_text = st.session_state.report_data[2].replace("**Section 3: Partnerships**", "").strip()
+        st.markdown(clean_text)
 
 else:
     with tab1:
         st.info("Select parameters and click 'Generate Report' to begin.")
 
-# --- TAB 4: CHATBOT ---
+# --- TAB 4: CHATBOT (Always active) ---
 with tab4:
     st.subheader("Query the Intelligence Engine")
     
@@ -124,16 +155,17 @@ with tab4:
 
     # Chat Input Box
     if prompt := st.chat_input("Ask a specific market or strategy question..."):
-        # 1. Display User Message
+        
+        # Display User Message
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="user"):
             st.markdown(prompt)
 
-        # 2. Generate AI Response
+        # Generate AI Response
         with st.chat_message("assistant", avatar=RZP_LOGO):
             with st.spinner("Analyzing..."):
                 try:
-                    # THE FIX: We wrap the user's prompt in strict behavioral rules
+                    # Engineered prompt to force executive brevity
                     engineered_prompt = f"""
                     You are a Razorpay Strategic Intelligence Assistant speaking to a company executive.
                     
