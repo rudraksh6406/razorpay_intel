@@ -1,70 +1,113 @@
 import streamlit as st
 import os
+import pandas as pd
 from dotenv import load_dotenv
 from google import genai  # Note the new import style for 2026
-from google.genai import types
 
-# 1. UI Setup
-st.set_page_config(page_title="Razorpay Intelligence", layout="wide")
-
-# 2. Load New API Key
+# 1. UI & SECRETS SETUP
+st.set_page_config(page_title="Razorpay Market Intelligence", layout="wide", initial_sidebar_state="expanded")
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("❌ Key Missing: Paste your new key into the .env file.")
+    st.error("System Error: Missing GEMINI_API_KEY in Streamlit Secrets.")
     st.stop()
 
-# 3. Initialize the 2026 Client
 client = genai.Client(api_key=api_key)
-# Using the stable 2.5 model to avoid 404 errors
-MODEL_ID = "gemini-2.5-flash" 
+MODEL_ID = "gemini-2.0-flash-lite"
+RZP_LOGO = "https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg"
 
-st.title("📊 Razorpay: 2026 Market Intelligence")
-st.markdown("Professional competitive analysis engine.")
+# Initialize Chat History in Session State
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# User Inputs
-companies = ["Cashfree", "Easebuzz", "PayU", "BillDesk", "Stripe", "Xflow", "PhonePe"]
-domains = ["Education", "NBFC/Lending", "Healthcare", "E-commerce", "SaaS", "Cross-Border"]
+# 2. DATA ARRAYS
+companies = ["Cashfree", "CCAvenue", "PayU", "BillDesk", "Stripe", "PhonePe", "Easebuzz", "Juspay", "Pine Labs"]
+domains = ["Society & Housing ERP", "Education", "Healthcare", "NBFC & Lending", "Cross-Border SaaS", "E-commerce", "Gaming", "WealthTech", "B2B Marketplaces"]
 
-col1, col2 = st.columns(2)
-with col1:
-    competitor = st.selectbox("Select Competitor", companies)
-with col2:
-    domain = st.selectbox("Select Industry", domains)
+# 3. CONTROL PANEL (SIDEBAR)
+with st.sidebar:
+    st.image(RZP_LOGO, width=140)
+    st.markdown("### Control Panel")
+    competitor = st.selectbox("Primary Competitor", companies)
+    domain = st.selectbox("Target Industry", domains)
+    st.write("") 
+    analyze_btn = st.button("Generate Report", use_container_width=True, type="primary")
+    st.divider()
+    st.caption("Internal Confidential - Strategy & Operations")
 
-if st.button("Generate Analysis", use_container_width=True):
-    # Professional prompt focused on competition and market strategy
-    prompt = f"""
-    Act as a Fintech Strategy Analyst. 
-    Analyze {competitor}'s current 2026 status in the {domain} sector.
-    Compare their positioning against Razorpay.
-    
-    Format:
-    - Market Status: (1 sentence)
-    - 3 Key Competitive Moves: (Bullet points)
-    - Razorpay Strategic Advantage: (1 sentence)
-    
-    Tone: Professional executive summary. Do not use the word 'threat'.
-    """
-    
-    with st.spinner("Processing Market Data..."):
+# 4. MAIN DASHBOARD HEADER
+st.title("Market Intelligence Dashboard")
+st.markdown(f"**Focus:** Razorpay vs. {competitor} | **Sector:** {domain}")
+st.write("")
+
+# 5. TABS SETUP (Data on left, Chatbot on right)
+tab1, tab2, tab3, tab4 = st.tabs(["Market Leaders", "Feature Comparison", "Partnerships", "Intelligence Assistant"])
+
+if analyze_btn:
+    with st.spinner("Compiling market intelligence..."):
         try:
-            # New 2026 method call
-            response = client.models.generate_content(
-                model=MODEL_ID,
-                contents=prompt
-            )
-            
-            if response.text:
-                st.divider()
-                st.success(f"### {competitor} | {domain} Analysis")
-                st.markdown(response.text)
-            else:
-                st.warning("Analysis generated, but response was empty. Please retry.")
+            # --- TAB 1: MARKET OVERVIEW & LEADERS ---
+            with tab1:
+                col1, col2 = st.columns([1, 2])
                 
+                with col1:
+                    st.subheader("Market Focus Score")
+                    # Dynamic Bar Chart
+                    chart_data = pd.DataFrame({
+                        "Focus Score": [85, 75, 60, 45],
+                        "Entities": ["Razorpay", competitor, "Top Leader", "New Entrant"]
+                    }).set_index("Entities")
+                    st.bar_chart(chart_data)
+
+                with col2:
+                    st.subheader(f"Top Players in {domain}")
+                    leaders_prompt = f"""
+                    Search for the Top 3 companies (payment or software) leading the {domain} sector.
+                    Strictly use this bulleted format for each:
+                    * **Company Name:** [Name](URL)
+                    * **Core Product:** Name the specific product they offer here.
+                    * **What they are doing:** 1 concise sentence on their current strategy.
+                    * **Why they are leading:** 1 concise sentence on their competitive advantage.
+                    Do not use paragraphs. Use bullet points only.
+                    """
+                    res1 = client.models.generate_content(model=MODEL_ID, contents=leaders_prompt)
+                    st.markdown(res1.text)
+
+            # --- TAB 2: FEATURE COMPARISON ---
+            with tab2:
+                st.subheader("Product & Gap Analysis")
+                strategy_prompt = f"""
+                Compare Razorpay and {competitor} in the {domain} sector.
+                Output strictly in bullet points:
+                * **Where Razorpay Wins:** (List 2 key advantages)
+                * **Where {competitor} Wins:** (List 2 key advantages)
+                * **Action Plan:** (List 3 specific product features Razorpay must build to win)
+                Do not use large blocks of text.
+                """
+                res2 = client.models.generate_content(model=MODEL_ID, contents=strategy_prompt)
+                st.markdown(res2.text)
+
+            # --- TAB 3: PARTNERSHIPS ---
+            with tab3:
+                st.subheader("Ecosystem & Alliances")
+                partner_prompt = f"""
+                Analyze the {domain} sector for Razorpay.
+                Output strictly in bullet points:
+                * **Strategy:** Recommend whether Razorpay should Build or Partner.
+                * **Target 1:** [Company Name](URL) - Why we should partner with them.
+                * **Target 2:** [Company Name](URL) - Why we should partner with them.
+                * **Target 3:** [Company Name](URL) - Why we should partner with them.
+                Keep explanations to a single sentence.
+                """
+                res3 = client.models.generate_content(model=MODEL_ID, contents=partner_prompt)
+                st.markdown(res3.text)
+
         except Exception as e:
-            st.error(f"Analysis Failed: {e}")
+            if "429" in str(e) or "quota" in str(e).lower():
+                st.warning("System Notice: API rate limit reached. Please wait 60 seconds.")
+            else:
+                st.error(f"Analysis Error: {e}")
 
 # --- QUICK CHATBOT ---
 st.divider()
