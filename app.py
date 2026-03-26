@@ -23,15 +23,27 @@ if "chart_data" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CUSTOM CSS: HERO, SOFT CARDS, AND CIRCULAR CHAT ---
+# --- CUSTOM CSS: ANIMATIONS, SOFT CARDS, AND CIRCULAR CHAT ---
 st.markdown("""
 <style>
-/* Global Softening */
-[data-testid="stAppViewContainer"] {
-    background-color: #FFFFFF;
+/* 1. HERO FADE-IN ANIMATION */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* 1. SOFT 3D FLIP CARDS */
+.hero-container {
+    animation: fadeInUp 1.5s ease-out;
+    text-align: center;
+}
+
+/* 2. SOFT 3D FLIP CARDS */
 .flip-card {
   background-color: transparent;
   width: 100%;
@@ -84,7 +96,7 @@ st.markdown("""
 .back-label { font-size: 0.7rem; font-weight: 800; color: #0C56FF; margin-top: 10px; letter-spacing: 1px; }
 .back-text { font-size: 0.8rem; font-weight: 600; color: #202124; line-height: 1.3; }
 
-/* 2. CIRCULAR FLOATING CHAT WIDGET */
+/* 3. CIRCULAR FLOATING CHAT WIDGET (BOTTOM RIGHT) */
 [data-testid="stPopover"] {
     position: fixed;
     bottom: 30px;
@@ -94,7 +106,7 @@ st.markdown("""
 [data-testid="stPopover"] > button {
     background-color: #202124 !important;
     color: #FFFFFF !important;
-    border-radius: 50% !important; /* Perfect Circle */
+    border-radius: 50% !important; 
     width: 60px !important;
     height: 60px !important;
     padding: 0px !important;
@@ -109,10 +121,10 @@ st.markdown("""
     background-color: #0C56FF !important;
     transform: scale(1.1);
 }
-/* Hide the label text inside the button to keep it a circle */
-[data-testid="stPopover"] p { font-size: 1.5rem !important; margin: 0; }
+/* Hide button text and center emoji */
+[data-testid="stPopover"] p { font-size: 1.5rem !important; margin: 0; padding: 0; line-height: 1; }
 
-/* 3. POPUP WINDOW STYLING */
+/* POPUP WINDOW STYLING */
 [data-testid="stPopoverBody"] {
     width: 350px !important;
     border-radius: 20px !important;
@@ -126,12 +138,18 @@ st.markdown("""
 companies = ["Cashfree", "CCAvenue", "PayU", "BillDesk", "Stripe", "PhonePe", "Easebuzz", "Juspay", "Pine Labs"]
 domains = ["Society & Housing ERP", "Education", "Healthcare", "NBFC & Lending", "Cross-Border SaaS", "E-commerce", "Gaming", "WealthTech", "B2B Marketplaces"]
 
-# 4. SECTION 1: THE HERO SCREEN
+# 4. SECTION 1: THE HERO SCREEN (WITH FADE ANIMATION)
 st.markdown("<br><br><br>", unsafe_allow_html=True)
 col_spacer1, col_hero, col_spacer2 = st.columns([1, 2, 1])
 with col_hero:
-    st.image(RZP_LOGO, use_container_width=True)
-    st.markdown("<h3 style='text-align: center; color: #5F6368; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; font-size: 1rem;'>Strategic Intelligence Engine</h3>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="hero-container">
+            <img src="{RZP_LOGO}" style="width: 100%; max-width: 600px; margin-bottom: 20px;">
+            <h3 style='color: #5F6368; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; font-size: 1rem;'>
+                Strategic Intelligence Engine
+            </h3>
+        </div>
+    """, unsafe_allow_html=True)
 st.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
 st.divider()
 
@@ -161,14 +179,13 @@ if analyze_btn:
             
             Section 2: Feature Comparison (Bullets)
             Section 3: Partnerships (Bullets)
-            Section 4: Revenue Analysis (Markdown Table)
+            Section 4: Revenue Analysis (Table)
             Section 5: Graph Data (Company,Score) - 5 lines.
             """
             
             master_response = client.models.generate_content(model=MODEL_ID, contents=master_prompt)
             st.session_state.report_data = master_response.text.split("|||SPLIT|||")
             
-            # Simple Graph Parsing
             try:
                 raw_graph_text = st.session_state.report_data[4].strip().split('\n')
                 companies_list, scores_list = [], []
