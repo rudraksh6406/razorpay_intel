@@ -12,7 +12,7 @@ except Exception:
     st.stop()
 
 client = genai.Client(api_key=api_key)
-MODEL_ID = "gemini-2.0-flash" 
+MODEL_ID = "gemini-1.5-flash" 
 RZP_LOGO = "https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg"
 
 # 2. SESSION MEMORY
