@@ -23,27 +23,10 @@ if "chart_data" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CUSTOM CSS: ANIMATIONS, SOFT CARDS, AND CIRCULAR CHAT ---
+# --- CUSTOM CSS: SOFT CARDS AND CIRCULAR CHAT ---
 st.markdown("""
 <style>
-/* 1. HERO FADE-IN ANIMATION */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.hero-container {
-    animation: fadeInUp 1.5s ease-out;
-    text-align: center;
-}
-
-/* 2. SOFT 3D FLIP CARDS */
+/* 1. SOFT 3D FLIP CARDS */
 .flip-card {
   background-color: transparent;
   width: 100%;
@@ -59,7 +42,7 @@ st.markdown("""
   transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
   box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-  border-radius: 24px; /* Soft edges */
+  border-radius: 24px; 
 }
 .flip-card:hover .flip-card-inner {
   transform: rotateY(180deg);
@@ -96,7 +79,7 @@ st.markdown("""
 .back-label { font-size: 0.7rem; font-weight: 800; color: #0C56FF; margin-top: 10px; letter-spacing: 1px; }
 .back-text { font-size: 0.8rem; font-weight: 600; color: #202124; line-height: 1.3; }
 
-/* 3. CIRCULAR FLOATING CHAT WIDGET (BOTTOM RIGHT) */
+/* 2. CIRCULAR FLOATING CHAT WIDGET */
 [data-testid="stPopover"] {
     position: fixed;
     bottom: 30px;
@@ -121,7 +104,6 @@ st.markdown("""
     background-color: #0C56FF !important;
     transform: scale(1.1);
 }
-/* Hide button text and center emoji */
 [data-testid="stPopover"] p { font-size: 1.5rem !important; margin: 0; padding: 0; line-height: 1; }
 
 /* POPUP WINDOW STYLING */
@@ -138,18 +120,12 @@ st.markdown("""
 companies = ["Cashfree", "CCAvenue", "PayU", "BillDesk", "Stripe", "PhonePe", "Easebuzz", "Juspay", "Pine Labs"]
 domains = ["Society & Housing ERP", "Education", "Healthcare", "NBFC & Lending", "Cross-Border SaaS", "E-commerce", "Gaming", "WealthTech", "B2B Marketplaces"]
 
-# 4. SECTION 1: THE HERO SCREEN (WITH FADE ANIMATION)
+# 4. SECTION 1: THE HERO SCREEN (STATIC)
 st.markdown("<br><br><br>", unsafe_allow_html=True)
 col_spacer1, col_hero, col_spacer2 = st.columns([1, 2, 1])
 with col_hero:
-    st.markdown(f"""
-        <div class="hero-container">
-            <img src="{RZP_LOGO}" style="width: 100%; max-width: 600px; margin-bottom: 20px;">
-            <h3 style='color: #5F6368; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; font-size: 1rem;'>
-                Strategic Intelligence Engine
-            </h3>
-        </div>
-    """, unsafe_allow_html=True)
+    st.image(RZP_LOGO, use_container_width=True)
+    st.markdown("<h3 style='text-align: center; color: #5F6368; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; font-size: 1rem;'>Strategic Intelligence Engine</h3>", unsafe_allow_html=True)
 st.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
 st.divider()
 
@@ -201,7 +177,7 @@ if analyze_btn:
         except Exception as e:
             st.error(f"Error: {e}")
 
-# 7. SCROLLABLE FLOW
+# 7. DISPLAY FLOW
 if st.session_state.report_data and len(st.session_state.report_data) >= 5:
     
     st.markdown(f"### MARKET PENETRATION: {domain.upper()}")
